@@ -70,6 +70,7 @@ const ACTIONS: Record<string, string> = {
   'render-building': 'render-building',
   'render-vehicle': 'render-vehicle',
   'render-character': 'render-character',
+  refine: 'refine',
   export: 'export-building',
 }
 

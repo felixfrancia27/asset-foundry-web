@@ -119,6 +119,12 @@ export default function JobPage() {
               {busy === step.label ? 'Working…' : step.label}
             </Button>
           ))}
+          <Button
+            disabled={busy !== null}
+            onClick={() => act(() => api.run(name, 'refine'), 'Refine')}
+          >
+            {busy === 'Refine' ? 'Refining…' : 'Refine ✨'}
+          </Button>
           {job.artifacts.zip ? (
             <a href={api.downloadUrl(name)} download>
               <Button variant="primary">Download zip</Button>
