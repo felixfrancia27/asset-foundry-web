@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, type JobStatus } from '../lib/api'
-import { Badge, Button, Panel, StatusBadge, EmptyState } from '../components'
+import { Badge, Button, Panel, StatusBadge, EmptyState, Lightbox } from '../components'
 
 const STEPS: { key: string; label: string; command: string }[] = [
   { key: 'compose-building', label: 'Compose', command: 'compose-building' },
@@ -10,12 +10,29 @@ const STEPS: { key: string; label: string; command: string }[] = [
   { key: 'export', label: 'Export + zip', command: 'export' },
 ]
 
+function groupPreviews(files: string[]) {
+  const groups: { label: string; files: string[] }[] = [
+    { label: 'Parts', files: [] },
+    { label: 'Draft views', files: [] },
+    { label: 'Clean reference', files: [] },
+    { label: 'Contact sheet', files: [] },
+  ]
+  for (const f of files) {
+    if (f.startsWith('part_')) groups[0].files.push(f)
+    else if (f.startsWith('turn_')) groups[1].files.push(f)
+    else if (f.startsWith('clean')) groups[2].files.push(f)
+    else if (f.startsWith('contact_sheet')) groups[3].files.push(f)
+  }
+  return groups.filter((g) => g.files.length > 0)
+}
+
 export default function JobPage() {
   const { name = '' } = useParams()
   const [job, setJob] = useState<JobStatus | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ message: string; tone: 'ok' | 'error' } | null>(null)
+  const [lightbox, setLightbox] = useState<number | null>(null)
 
   const reload = useCallback(() => {
     api
@@ -26,16 +43,21 @@ export default function JobPage() {
 
   useEffect(reload, [reload])
 
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(() => setToast(null), 4000)
+    return () => clearTimeout(t)
+  }, [toast])
+
   async function act(fn: () => Promise<unknown>, label: string) {
     setBusy(label)
     setError(null)
-    setNotice(null)
     try {
       await fn()
-      setNotice(`${label} done`)
+      setToast({ message: `${label} done`, tone: 'ok' })
       reload()
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setToast({ message: e instanceof Error ? e.message : String(e), tone: 'error' })
     } finally {
       setBusy(null)
     }
@@ -54,6 +76,9 @@ export default function JobPage() {
     ;(candidatesByRole[c.role] ||= []).push(c.id)
   }
 
+  const images = job.previews.map((file) => ({ src: api.previewUrl(name, file), label: file }))
+  const groups = groupPreviews(job.previews)
+
   return (
     <div className="grid">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -70,15 +95,6 @@ export default function JobPage() {
           <StatusBadge status={job.review_status} />
         </div>
       </div>
-
-      {notice && <Panel>{notice}</Panel>}
-      {error && (
-        <Panel>
-          <span className="btn-danger" style={{ color: 'var(--danger)' }}>
-            {error}
-          </span>
-        </Panel>
-      )}
 
       <Panel title="Review">
         {job.pending_roles.length === 0 ? (
@@ -149,29 +165,62 @@ export default function JobPage() {
         {job.previews.length === 0 ? (
           <p className="muted">No previews yet — run “Render previews”.</p>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 10 }}>
-            {job.previews.map((file) => (
-              <a key={file} href={api.previewUrl(name, file)} target="_blank" rel="noreferrer">
-                <img
-                  src={api.previewUrl(name, file)}
-                  alt={file}
-                  loading="lazy"
-                  style={{
-                    width: '100%',
-                    borderRadius: 8,
-                    border: '1px solid var(--border)',
-                    background: 'var(--surface-2)',
-                    display: 'block',
-                  }}
-                />
-                <span className="muted" style={{ fontSize: 11, display: 'block', textAlign: 'center', marginTop: 4 }}>
-                  {file}
-                </span>
-              </a>
-            ))}
-          </div>
+          groups.map((group) => (
+            <div key={group.label}>
+              <div className="section-label">{group.label}</div>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+                  gap: 10,
+                }}
+              >
+                {group.files.map((file) => {
+                  const index = images.findIndex((img) => img.label === file)
+                  return (
+                    <div key={file} onClick={() => setLightbox(index)}>
+                      <img
+                        className="thumb"
+                        src={api.previewUrl(name, file)}
+                        alt={file}
+                        loading="lazy"
+                        style={{
+                          width: '100%',
+                          borderRadius: 8,
+                          border: '1px solid var(--border)',
+                          background: 'var(--surface-2)',
+                          display: 'block',
+                        }}
+                      />
+                      <span
+                        className="muted"
+                        style={{ fontSize: 11, display: 'block', textAlign: 'center', marginTop: 4 }}
+                      >
+                        {file}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ))
         )}
       </Panel>
+
+      {lightbox !== null && (
+        <Lightbox
+          images={images}
+          index={lightbox}
+          onClose={() => setLightbox(null)}
+          onNavigate={setLightbox}
+        />
+      )}
+
+      {toast && (
+        <div className="toast" data-tone={toast.tone}>
+          {toast.message}
+        </div>
+      )}
     </div>
   )
 }

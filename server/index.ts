@@ -1,5 +1,5 @@
 import express from 'express'
-import { spawnSync } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -11,16 +11,22 @@ const ASSET_FOUNDRY_DIR = path.resolve(
 const app = express()
 app.use(express.json())
 
-function runCommand(args: string[]): { output: string; error?: string } {
-  const res = spawnSync('python', ['-m', 'asset_foundry', ...args], {
-    cwd: ASSET_FOUNDRY_DIR,
-    encoding: 'utf8',
+function runCommand(args: string[]): Promise<{ output: string; error?: string }> {
+  return new Promise((resolve) => {
+    const child = spawn('python', ['-m', 'asset_foundry', ...args], { cwd: ASSET_FOUNDRY_DIR })
+    let stdout = ''
+    let stderr = ''
+    child.stdout.on('data', (d) => (stdout += d))
+    child.stderr.on('data', (d) => (stderr += d))
+    child.on('error', (err) => resolve({ output: '', error: err.message }))
+    child.on('close', (code) => {
+      if (code !== 0) {
+        resolve({ output: '', error: stderr.trim() || stdout.trim() || `command failed (${code})` })
+      } else {
+        resolve({ output: stdout.trim(), error: undefined })
+      }
+    })
   })
-  if (res.status !== 0) {
-    const message = (res.stderr || '').trim() || (res.stdout || '').trim() || `command failed (${res.status})`
-    return { output: '', error: message }
-  }
-  return { output: (res.stdout || '').trim(), error: undefined }
 }
 
 function parseJson(text: string): unknown {
@@ -60,37 +66,37 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true, assetFoundryDir: ASSET_FOUNDRY_DIR })
 })
 
-app.get('/api/jobs', (_req, res) => {
-  const { output, error } = runCommand(['list-jobs'])
+app.get('/api/jobs', async (_req, res) => {
+  const { output, error } = await runCommand(['list-jobs'])
   if (error) return res.status(500).json({ error })
   res.json(parseJson(output) ?? [])
 })
 
-app.get('/api/jobs/:name', (req, res) => {
+app.get('/api/jobs/:name', async (req, res) => {
   const name = req.params.name
-  const { output, error } = runCommand(['job-status', '--job', `jobs/${name}`])
+  const { output, error } = await runCommand(['job-status', '--job', `jobs/${name}`])
   if (error) return res.status(500).json({ error })
   const status = (parseJson(output) ?? {}) as Record<string, unknown>
   res.json({ ...status, previews: previewFiles(name) })
 })
 
-app.post('/api/jobs/:name/review', (req, res) => {
+app.post('/api/jobs/:name/review', async (req, res) => {
   const name = req.params.name
   const { role, action, id } = req.body || {}
   const args = ['review', '--job', `jobs/${name}`, '--role', String(role), '--action', String(action)]
   if (id) args.push('--id', String(id))
-  const { output, error } = runCommand(args)
+  const { output, error } = await runCommand(args)
   if (error) return res.status(400).json({ error })
   res.json({ output })
 })
 
-app.post('/api/jobs/:name/:action', (req, res) => {
+app.post('/api/jobs/:name/:action', async (req, res) => {
   const name = req.params.name
   const command = ACTIONS[req.params.action]
   if (!command) return res.status(404).json({ error: `unknown action: ${req.params.action}` })
   const args = [command, '--job', `jobs/${name}`]
   if (command === 'export-building') args.push('--zip')
-  const { output, error } = runCommand(args)
+  const { output, error } = await runCommand(args)
   if (error) return res.status(400).json({ error })
   res.json({ output })
 })

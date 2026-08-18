@@ -6,6 +6,7 @@ import { Panel, StatusBadge, EmptyState } from '../components'
 export default function JobsPage() {
   const [jobs, setJobs] = useState<JobSummary[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
 
   useEffect(() => {
     api
@@ -22,31 +23,43 @@ export default function JobsPage() {
     return <EmptyState>Loading jobs…</EmptyState>
   }
 
-  if (jobs.length === 0) {
-    return (
-      <EmptyState>
-        No jobs yet. Start one from the Asset Foundry CLI:
-        <br />
-        <code className="muted">python -m asset_foundry init-job --name … --prompt "…"</code>
-      </EmptyState>
-    )
-  }
+  const filtered = jobs.filter((job) => job.name.toLowerCase().includes(query.toLowerCase()))
 
   return (
-    <div className="grid">
-      {jobs.map((job) => (
-        <Link key={job.name} to={`/jobs/${job.name}`}>
-          <Panel>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ fontSize: 17 }}>{job.name}</h2>
-              <StatusBadge status={job.status} />
-            </div>
-            <p className="muted" style={{ margin: '8px 0 0' }}>
-              {job.type}
-            </p>
-          </Panel>
-        </Link>
-      ))}
+    <div>
+      <input
+        className="search"
+        placeholder="Search jobs…"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
+      {filtered.length === 0 ? (
+        jobs.length === 0 ? (
+          <EmptyState>
+            No jobs yet. Start one from the Asset Foundry CLI:
+            <br />
+            <code className="muted">python -m asset_foundry init-job --name … --prompt "…"</code>
+          </EmptyState>
+        ) : (
+          <EmptyState>No jobs match “{query}”.</EmptyState>
+        )
+      ) : (
+        <div className="grid">
+          {filtered.map((job) => (
+            <Link key={job.name} to={`/jobs/${job.name}`}>
+              <Panel>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h2 style={{ fontSize: 17 }}>{job.name}</h2>
+                  <StatusBadge status={job.status} />
+                </div>
+                <p className="muted" style={{ margin: '8px 0 0' }}>
+                  {job.type}
+                </p>
+              </Panel>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
