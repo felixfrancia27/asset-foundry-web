@@ -107,6 +107,20 @@ export default function JobPage() {
         </div>
       </div>
 
+      {(job.prompt || job.style.length > 0) && (
+        <Panel title="Generation">
+          {job.prompt && <p className="muted" style={{ margin: '0 0 12px', fontStyle: 'italic' }}>“{job.prompt}”</p>}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            {job.style.map((tag) => (
+              <Badge key={tag}>{tag}</Badge>
+            ))}
+            {job.pending_roles.map((role) => (
+              <Badge key={role} tone="warn">{role}</Badge>
+            ))}
+          </div>
+        </Panel>
+      )}
+
       <Panel title="Pipeline">
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           {(STEPS_BY_TYPE[job.type] || STEPS_BY_TYPE.building).map((step) => (

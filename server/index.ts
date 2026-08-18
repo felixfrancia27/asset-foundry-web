@@ -63,6 +63,17 @@ function renderedFiles(name: string): string[] {
     .sort()
 }
 
+function requestInfo(name: string): { prompt: string; style: string[] } {
+  const requestPath = path.join(ASSET_FOUNDRY_DIR, 'jobs', name, 'request.json')
+  if (!fs.existsSync(requestPath)) return { prompt: '', style: [] }
+  try {
+    const r = JSON.parse(fs.readFileSync(requestPath, 'utf8'))
+    return { prompt: r.prompt || '', style: r.style?.tags || [] }
+  } catch {
+    return { prompt: '', style: [] }
+  }
+}
+
 const ACTIONS: Record<string, string> = {
   compose: 'compose',
   'compose-building': 'compose-building',
@@ -116,7 +127,8 @@ app.get('/api/jobs/:name', async (req, res) => {
   const { output, error } = await runCommand(['job-status', '--job', `jobs/${name}`])
   if (error) return res.status(500).json({ error })
   const status = (parseJson(output) ?? {}) as Record<string, unknown>
-  res.json({ ...status, previews: previewFiles(name), rendered: renderedFiles(name) })
+  const info = requestInfo(name)
+  res.json({ ...status, ...info, previews: previewFiles(name), rendered: renderedFiles(name) })
 })
 
 app.post('/api/jobs/:name/review', async (req, res) => {

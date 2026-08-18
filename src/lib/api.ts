@@ -21,6 +21,8 @@ export interface JobStatus {
   artifacts: Record<string, boolean>
   previews: string[]
   rendered: string[]
+  prompt: string
+  style: string[]
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
