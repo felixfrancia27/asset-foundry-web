@@ -59,6 +59,8 @@ const ACTIONS: Record<string, string> = {
   'compose-building': 'compose-building',
   'render-previews': 'render-previews',
   'render-building': 'render-building',
+  'render-vehicle': 'render-vehicle',
+  'render-character': 'render-character',
   export: 'export-building',
 }
 

@@ -3,12 +3,20 @@ import { Link, useNavigate } from 'react-router-dom'
 import { api, type JobSummary } from '../lib/api'
 import { Button, Panel, StatusBadge, EmptyState } from '../components'
 
+const EXAMPLES = [
+  { label: 'Industrial building', name: 'my_factory', type: 'building', prompt: 'Square industrial factory with tanks, pipes, and chimneys' },
+  { label: 'Tank vehicle', name: 'my_tank', type: 'vehicle', prompt: 'A tank with turret and tracks' },
+  { label: 'Knight character', name: 'my_knight', type: 'character', prompt: 'A knight with sword and shield' },
+]
+
+const TYPES = ['building', 'vehicle', 'character']
+
 export default function JobsPage() {
   const [jobs, setJobs] = useState<JobSummary[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [creating, setCreating] = useState(false)
-  const [form, setForm] = useState({ name: '', prompt: '' })
+  const [form, setForm] = useState({ name: '', prompt: '', type: 'building' })
   const [busy, setBusy] = useState(false)
   const navigate = useNavigate()
 
@@ -25,9 +33,9 @@ export default function JobsPage() {
     setBusy(true)
     setError(null)
     try {
-      const res = await api.createJob(form.name, form.prompt)
+      const res = await api.createJob(form.name, form.prompt, form.type)
       setCreating(false)
-      setForm({ name: '', prompt: '' })
+      setForm({ name: '', prompt: '', type: 'building' })
       navigate(`/jobs/${res.name}`)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
@@ -53,7 +61,7 @@ export default function JobsPage() {
 
       {creating && (
         <Panel>
-          <div className="grid" style={{ gridTemplateColumns: '1fr 2fr auto', alignItems: 'end' }}>
+          <div className="grid" style={{ gridTemplateColumns: '1fr 2fr auto auto', alignItems: 'end' }}>
             <label className="muted" style={{ display: 'grid', gap: 6, fontSize: 13 }}>
               Name
               <input
@@ -74,9 +82,39 @@ export default function JobsPage() {
                 style={{ marginBottom: 0 }}
               />
             </label>
+            <label className="muted" style={{ display: 'grid', gap: 6, fontSize: 13 }}>
+              Type
+              <select
+                className="search"
+                value={form.type}
+                onChange={(e) => setForm({ ...form, type: e.target.value })}
+                style={{ marginBottom: 0 }}
+              >
+                {TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </label>
             <Button variant="primary" disabled={busy || !form.name || !form.prompt} onClick={createJob}>
               {busy ? 'Creating…' : 'Create'}
             </Button>
+          </div>
+
+          <div className="section-label" style={{ marginTop: 18 }}>
+            Try an example
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {EXAMPLES.map((ex) => (
+              <button
+                key={ex.name}
+                className="btn"
+                onClick={() => setForm({ name: ex.name, prompt: ex.prompt, type: ex.type })}
+              >
+                {ex.label}
+              </button>
+            ))}
           </div>
           {error && <p style={{ color: 'var(--danger)', margin: '10px 0 0' }}>{error}</p>}
         </Panel>

@@ -3,12 +3,22 @@ import { Link, useParams } from 'react-router-dom'
 import { api, type JobStatus } from '../lib/api'
 import { Badge, Button, Panel, StatusBadge, EmptyState, Lightbox } from '../components'
 
-const STEPS: { key: string; label: string; command: string }[] = [
-  { key: 'compose-building', label: 'Compose', command: 'compose-building' },
-  { key: 'render-previews', label: 'Render previews', command: 'render-previews' },
-  { key: 'render-building', label: 'Render spritesheets', command: 'render-building' },
-  { key: 'export', label: 'Export + zip', command: 'export' },
-]
+const STEPS_BY_TYPE: Record<string, { key: string; label: string; command: string }[]> = {
+  building: [
+    { key: 'compose-building', label: 'Compose', command: 'compose-building' },
+    { key: 'render-previews', label: 'Render previews', command: 'render-previews' },
+    { key: 'render-building', label: 'Render spritesheets', command: 'render-building' },
+    { key: 'export', label: 'Export + zip', command: 'export' },
+  ],
+  vehicle: [
+    { key: 'render-vehicle', label: 'Render vehicle', command: 'render-vehicle' },
+    { key: 'export', label: 'Export + zip', command: 'export' },
+  ],
+  character: [
+    { key: 'render-character', label: 'Render character', command: 'render-character' },
+    { key: 'export', label: 'Export + zip', command: 'export' },
+  ],
+}
 
 function groupPreviews(files: string[]) {
   const groups: { label: string; files: string[] }[] = [
@@ -229,7 +239,7 @@ export default function JobPage() {
 
       <Panel title="Pipeline">
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          {STEPS.map((step) => (
+          {(STEPS_BY_TYPE[job.type] || STEPS_BY_TYPE.building).map((step) => (
             <Button
               key={step.key}
               variant={step.key === 'export' ? 'primary' : undefined}
