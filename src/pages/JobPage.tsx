@@ -123,7 +123,7 @@ export default function JobPage() {
             disabled={busy !== null}
             onClick={() => act(() => api.run(name, 'refine'), 'Refine')}
           >
-            {busy === 'Refine' ? 'Refining…' : 'Refine ✨'}
+            {busy === 'Refine' ? 'Refining…' : 'Refine'}
           </Button>
           {job.artifacts.zip ? (
             <a href={api.downloadUrl(name)} download>
