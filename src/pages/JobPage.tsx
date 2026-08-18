@@ -86,6 +86,8 @@ export default function JobPage() {
 
   const renderedImages = job.rendered.map((file) => ({ src: api.workUrl(name, file), label: file }))
   const previewImages = job.previews.map((file) => ({ src: api.previewUrl(name, file), label: file }))
+  const heroFile = job.rendered.find((f) => f.endsWith('clean.png'))
+  const atlasFiles = job.rendered.filter((f) => f !== heroFile).map((f) => ({ src: api.workUrl(name, f), label: f }))
 
   return (
     <div className="grid">
@@ -133,7 +135,33 @@ export default function JobPage() {
         {renderedImages.length === 0 ? (
           <p className="muted">Nothing rendered yet — run a render step above.</p>
         ) : (
-          <Gallery images={renderedImages} />
+          <>
+            {heroFile && (
+              <div style={{ textAlign: 'center', marginBottom: 16 }}>
+                <img
+                  src={api.workUrl(name, heroFile)}
+                  alt="Clean render"
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: 480,
+                    borderRadius: 12,
+                    border: '1px solid var(--border)',
+                    background: 'var(--surface-2)',
+                    imageRendering: 'auto',
+                  }}
+                />
+                <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                  Clean render — how it looks in-game
+                </p>
+              </div>
+            )}
+            {atlasFiles.length > 0 && (
+              <>
+                <div className="section-label">Spritesheet atlas (8 directions × frames)</div>
+                <Gallery images={atlasFiles} />
+              </>
+            )}
+          </>
         )}
       </Panel>
 
