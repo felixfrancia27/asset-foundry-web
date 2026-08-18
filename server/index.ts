@@ -72,6 +72,33 @@ app.get('/api/jobs', async (_req, res) => {
   res.json(parseJson(output) ?? [])
 })
 
+app.post('/api/jobs', async (req, res) => {
+  const { name, prompt, type } = req.body || {}
+  if (!name || !prompt) return res.status(400).json({ error: 'name and prompt are required' })
+  const args = ['init-job', '--name', String(name), '--prompt', String(prompt)]
+  if (type) args.push('--type', String(type))
+  const { output, error } = await runCommand(args)
+  if (error) return res.status(400).json({ error })
+  res.json({ output, name: String(name) })
+})
+
+app.post('/api/jobs/:name/candidates', async (req, res) => {
+  const name = req.params.name
+  const { role, title, url, author, license, license_url } = req.body || {}
+  if (!role || !title || !url || !author || !license) {
+    return res.status(400).json({ error: 'role, title, url, author, and license are required' })
+  }
+  const args = [
+    'add-candidate', '--job', `jobs/${name}`,
+    '--role', String(role), '--title', String(title), '--url', String(url),
+    '--author', String(author), '--license', String(license),
+  ]
+  if (license_url) args.push('--license-url', String(license_url))
+  const { output, error } = await runCommand(args)
+  if (error) return res.status(400).json({ error })
+  res.json({ output })
+})
+
 app.get('/api/jobs/:name', async (req, res) => {
   const name = req.params.name
   const { output, error } = await runCommand(['job-status', '--job', `jobs/${name}`])

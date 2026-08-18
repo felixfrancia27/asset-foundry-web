@@ -33,6 +33,7 @@ export default function JobPage() {
   const [busy, setBusy] = useState<string | null>(null)
   const [toast, setToast] = useState<{ message: string; tone: 'ok' | 'error' } | null>(null)
   const [lightbox, setLightbox] = useState<number | null>(null)
+  const [candForm, setCandForm] = useState({ role: '', title: '', url: '', author: '', license: 'CC-BY' })
 
   const reload = useCallback(() => {
     api
@@ -55,6 +56,21 @@ export default function JobPage() {
     try {
       await fn()
       setToast({ message: `${label} done`, tone: 'ok' })
+      reload()
+    } catch (e) {
+      setToast({ message: e instanceof Error ? e.message : String(e), tone: 'error' })
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  async function addCandidate() {
+    setBusy('add-candidate')
+    setError(null)
+    try {
+      await api.addCandidate(name, candForm)
+      setToast({ message: `added candidate for ${candForm.role}`, tone: 'ok' })
+      setCandForm({ role: '', title: '', url: '', author: '', license: 'CC-BY' })
       reload()
     } catch (e) {
       setToast({ message: e instanceof Error ? e.message : String(e), tone: 'error' })
@@ -140,6 +156,76 @@ export default function JobPage() {
           </div>
         )}
       </Panel>
+
+      {job.pending_roles.length > 0 && (
+        <Panel title="Add candidate">
+          <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', alignItems: 'end' }}>
+            <label className="muted" style={{ display: 'grid', gap: 6, fontSize: 13 }}>
+              Role
+              <select
+                className="search"
+                value={candForm.role}
+                onChange={(e) => setCandForm({ ...candForm, role: e.target.value })}
+                style={{ marginBottom: 0 }}
+              >
+                <option value="">Select role…</option>
+                {job.pending_roles.map((role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="muted" style={{ display: 'grid', gap: 6, fontSize: 13 }}>
+              Title
+              <input
+                className="search"
+                placeholder="Storage Tank"
+                value={candForm.title}
+                onChange={(e) => setCandForm({ ...candForm, title: e.target.value })}
+                style={{ marginBottom: 0 }}
+              />
+            </label>
+            <label className="muted" style={{ display: 'grid', gap: 6, fontSize: 13 }}>
+              URL
+              <input
+                className="search"
+                placeholder="https://example.com/tank"
+                value={candForm.url}
+                onChange={(e) => setCandForm({ ...candForm, url: e.target.value })}
+                style={{ marginBottom: 0 }}
+              />
+            </label>
+            <label className="muted" style={{ display: 'grid', gap: 6, fontSize: 13 }}>
+              Author
+              <input
+                className="search"
+                placeholder="Author"
+                value={candForm.author}
+                onChange={(e) => setCandForm({ ...candForm, author: e.target.value })}
+                style={{ marginBottom: 0 }}
+              />
+            </label>
+            <label className="muted" style={{ display: 'grid', gap: 6, fontSize: 13 }}>
+              License
+              <input
+                className="search"
+                placeholder="CC-BY"
+                value={candForm.license}
+                onChange={(e) => setCandForm({ ...candForm, license: e.target.value })}
+                style={{ marginBottom: 0 }}
+              />
+            </label>
+            <Button
+              variant="primary"
+              disabled={busy !== null || !candForm.role || !candForm.title || !candForm.url || !candForm.author}
+              onClick={addCandidate}
+            >
+              Add
+            </Button>
+          </div>
+        </Panel>
+      )}
 
       <Panel title="Pipeline">
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>

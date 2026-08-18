@@ -32,6 +32,18 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   listJobs: () => request<JobSummary[]>('/api/jobs'),
+  createJob: (name: string, prompt: string, type?: string) =>
+    request<{ output: string; name: string }>('/api/jobs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, prompt, type }),
+    }),
+  addCandidate: (name: string, data: Record<string, string>) =>
+    request<{ output: string }>(`/api/jobs/${encodeURIComponent(name)}/candidates`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }),
   jobStatus: (name: string) => request<JobStatus>(`/api/jobs/${encodeURIComponent(name)}`),
   review: (name: string, role: string, action: string, id?: string) =>
     request<{ output: string }>(`/api/jobs/${encodeURIComponent(name)}/review`, {
