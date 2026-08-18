@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 
 const STATUS_TONES: Record<string, string> = {
@@ -61,6 +61,42 @@ export function EmptyState({ children }: { children: ReactNode }) {
 export interface GalleryImage {
   src: string
   label: string
+}
+
+export function Gallery({ images }: { images: GalleryImage[] }) {
+  const [index, setIndex] = useState<number | null>(null)
+
+  if (images.length === 0) return null
+
+  return (
+    <div
+      style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 10 }}
+    >
+      {images.map((img, i) => (
+        <div key={img.label} onClick={() => setIndex(i)} style={{ cursor: 'pointer' }}>
+          <img
+            className="thumb"
+            src={img.src}
+            alt={img.label}
+            loading="lazy"
+            style={{
+              width: '100%',
+              borderRadius: 8,
+              border: '1px solid var(--border)',
+              background: 'var(--surface-2)',
+              display: 'block',
+            }}
+          />
+          <span className="muted" style={{ fontSize: 11, display: 'block', textAlign: 'center', marginTop: 4 }}>
+            {img.label}
+          </span>
+        </div>
+      ))}
+      {index !== null && (
+        <Lightbox images={images} index={index} onClose={() => setIndex(null)} onNavigate={setIndex} />
+      )}
+    </div>
+  )
 }
 
 export function Lightbox({

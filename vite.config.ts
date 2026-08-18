@@ -7,6 +7,7 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:3001',
       '/previews': 'http://localhost:3001',
+      '/work': 'http://localhost:3001',
       '/download': 'http://localhost:3001',
     },
   },

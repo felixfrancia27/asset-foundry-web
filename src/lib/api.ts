@@ -20,6 +20,7 @@ export interface JobStatus {
   candidates: Candidate[]
   artifacts: Record<string, boolean>
   previews: string[]
+  rendered: string[]
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
@@ -54,5 +55,6 @@ export const api = {
   run: (name: string, action: string) =>
     request<{ output: string }>(`/api/jobs/${encodeURIComponent(name)}/${action}`, { method: 'POST' }),
   previewUrl: (name: string, file: string) => `/previews/${encodeURIComponent(name)}/${encodeURIComponent(file)}`,
+  workUrl: (name: string, file: string) => `/work/${encodeURIComponent(name)}/${encodeURIComponent(file)}`,
   downloadUrl: (name: string) => `/download/${encodeURIComponent(name)}`,
 }

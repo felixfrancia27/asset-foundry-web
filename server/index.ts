@@ -54,6 +54,15 @@ function previewFiles(name: string): string[] {
   }
 }
 
+function renderedFiles(name: string): string[] {
+  const workDir = path.join(ASSET_FOUNDRY_DIR, 'jobs', name, 'work')
+  if (!fs.existsSync(workDir)) return []
+  return fs
+    .readdirSync(workDir)
+    .filter((f) => /\.png$/.test(f))
+    .sort()
+}
+
 const ACTIONS: Record<string, string> = {
   compose: 'compose',
   'compose-building': 'compose-building',
@@ -106,7 +115,7 @@ app.get('/api/jobs/:name', async (req, res) => {
   const { output, error } = await runCommand(['job-status', '--job', `jobs/${name}`])
   if (error) return res.status(500).json({ error })
   const status = (parseJson(output) ?? {}) as Record<string, unknown>
-  res.json({ ...status, previews: previewFiles(name) })
+  res.json({ ...status, previews: previewFiles(name), rendered: renderedFiles(name) })
 })
 
 app.post('/api/jobs/:name/review', async (req, res) => {
@@ -136,6 +145,16 @@ app.get('/previews/:name/:file', (req, res) => {
     return res.status(400).send('bad path')
   }
   const filePath = path.join(ASSET_FOUNDRY_DIR, 'jobs', name, 'review', 'previews', file)
+  if (!fs.existsSync(filePath)) return res.status(404).send('not found')
+  res.sendFile(filePath)
+})
+
+app.get('/work/:name/:file', (req, res) => {
+  const { name, file } = req.params
+  if (!/^[a-z0-9_]+$/.test(name) || !/^[a-z0-9_.-]+$/.test(file)) {
+    return res.status(400).send('bad path')
+  }
+  const filePath = path.join(ASSET_FOUNDRY_DIR, 'jobs', name, 'work', file)
   if (!fs.existsSync(filePath)) return res.status(404).send('not found')
   res.sendFile(filePath)
 })
