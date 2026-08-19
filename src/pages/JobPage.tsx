@@ -1,7 +1,52 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { api, type JobStatus } from '../lib/api'
-import { Badge, Button, Panel, StatusBadge, TypeBadge, StatusTimeline, EmptyState, Gallery } from '../components'
+import { api, type JobStatus, type RefineStatus } from '../lib/api'
+import { Badge, Button, Panel, StatusBadge, TypeBadge, StatusTimeline, EmptyState, Gallery, Spinner } from '../components'
+
+interface RoundInfo {
+  n: number
+  before?: number
+  after?: number
+  features?: number
+  critique?: string
+}
+
+function parseRounds(output: string): { rounds: RoundInfo[]; complete: boolean } {
+  const byRound = new Map<number, RoundInfo>()
+  let complete = false
+  for (const line of output.split('\n')) {
+    let m = line.match(/round (\d+): integration score (\d+)/)
+    if (m) {
+      const r = byRound.get(Number(m[1])) ?? { n: Number(m[1]) }
+      r.before = Number(m[2])
+      byRound.set(r.n, r)
+      continue
+    }
+    m = line.match(/round (\d+): critique: (.+)/)
+    if (m) {
+      const r = byRound.get(Number(m[1])) ?? { n: Number(m[1]) }
+      r.critique = m[2]
+      byRound.set(r.n, r)
+      continue
+    }
+    m = line.match(/round (\d+): integration \d+ -> (\d+), refined to (\d+) features/)
+    if (m) {
+      const r = byRound.get(Number(m[1])) ?? { n: Number(m[1]) }
+      r.after = Number(m[2])
+      r.features = Number(m[3])
+      byRound.set(r.n, r)
+      continue
+    }
+    if (/refine complete/.test(line)) complete = true
+  }
+  return { rounds: [...byRound.values()].sort((a, b) => a.n - b.n), complete }
+}
+
+function cssColor(color?: number[]) {
+  if (!color || color.length < 3) return 'var(--surface-2)'
+  const [r, g, b] = color
+  return `rgb(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)})`
+}
 
 const STEPS_BY_TYPE: Record<string, { key: string; label: string; command: string }[]> = {
   building: [
@@ -27,6 +72,10 @@ export default function JobPage() {
   const [busy, setBusy] = useState<string | null>(null)
   const [toast, setToast] = useState<{ message: string; tone: 'ok' | 'error' } | null>(null)
   const [candForm, setCandForm] = useState({ role: '', title: '', url: '', author: '', license: 'CC-BY' })
+  const [refining, setRefining] = useState(false)
+  const [refineOutput, setRefineOutput] = useState('')
+  const [refineFeatures, setRefineFeatures] = useState<RefineStatus['features']>([])
+  const refineTimer = useRef<number | null>(null)
 
   const reload = useCallback(() => {
     api
@@ -36,6 +85,10 @@ export default function JobPage() {
   }, [name])
 
   useEffect(reload, [reload])
+
+  useEffect(() => () => {
+    if (refineTimer.current) clearInterval(refineTimer.current)
+  }, [])
 
   useEffect(() => {
     if (!toast) return
@@ -71,6 +124,42 @@ export default function JobPage() {
     }
   }
 
+  function stopRefine() {
+    if (refineTimer.current) clearInterval(refineTimer.current)
+    refineTimer.current = null
+    setRefining(false)
+  }
+
+  async function refine() {
+    if (refining) return
+    setRefining(true)
+    setRefineOutput('')
+    setError(null)
+    try {
+      await api.refine(name)
+    } catch (e) {
+      setRefining(false)
+      setToast({ message: e instanceof Error ? e.message : String(e), tone: 'error' })
+      return
+    }
+    refineTimer.current = window.setInterval(async () => {
+      try {
+        const status = await api.refineStatus(name)
+        setRefineOutput(status.output)
+        setRefineFeatures(status.features)
+        if (!status.running) {
+          stopRefine()
+          if (status.error) setToast({ message: status.error, tone: 'error' })
+          else setToast({ message: 'Refine done', tone: 'ok' })
+          reload()
+        }
+      } catch (e) {
+        stopRefine()
+        setToast({ message: e instanceof Error ? e.message : String(e), tone: 'error' })
+      }
+    }, 1500)
+  }
+
   if (error && !job) {
     return <EmptyState>Could not load job: {error}</EmptyState>
   }
@@ -88,6 +177,8 @@ export default function JobPage() {
   const previewImages = job.previews.map((file) => ({ src: api.previewUrl(name, file), label: file }))
   const heroFile = job.rendered.find((f) => f.endsWith('clean.png'))
   const atlasFiles = job.rendered.filter((f) => f !== heroFile).map((f) => ({ src: api.workUrl(name, f), label: f }))
+  const refineRounds = parseRounds(refineOutput)
+  const currentRound = refineRounds.rounds.length ? refineRounds.rounds[refineRounds.rounds.length - 1].n : 1
 
   return (
     <div className="grid">
@@ -138,10 +229,10 @@ export default function JobPage() {
             </Button>
           ))}
           <Button
-            disabled={busy !== null}
-            onClick={() => act(() => api.run(name, 'refine'), 'Refine')}
+            disabled={busy !== null || refining}
+            onClick={refine}
           >
-            {busy === 'Refine' ? 'Refining…' : 'Refine'}
+            {refining ? 'Refining…' : 'Refine'}
           </Button>
           {job.artifacts.zip ? (
             <a href={api.downloadUrl(name)} download>
@@ -154,6 +245,54 @@ export default function JobPage() {
           )}
         </div>
       </Panel>
+
+      {(refining || refineOutput || refineFeatures.length > 0) && (
+        <Panel title="Refine">
+          {refining ? (
+            <div className="refine-status">
+              <Spinner /> Refining — round {currentRound} · {refineFeatures.length} parts
+            </div>
+          ) : (
+            refineRounds.complete && (
+              <div className="refine-status refine-done">Refine complete · {refineFeatures.length} parts</div>
+            )
+          )}
+
+          {refineRounds.rounds.length > 0 && (
+            <ol className="refine-rounds">
+              {refineRounds.rounds.map((round) => (
+                <li key={round.n}>
+                  <div className="refine-round-head">
+                    <span className="refine-round-n">Round {round.n}</span>
+                    {round.before !== undefined && round.after !== undefined && (
+                      <span
+                        className={`refine-delta ${
+                          round.after < round.before ? 'is-good' : round.after > round.before ? 'is-warn' : ''
+                        }`}
+                      >
+                        integration {round.before} → {round.after}
+                      </span>
+                    )}
+                    {round.features !== undefined && <span className="muted">{round.features} parts</span>}
+                  </div>
+                  {round.critique && <p className="refine-critique">{round.critique}</p>}
+                </li>
+              ))}
+            </ol>
+          )}
+
+          {refineFeatures.length > 0 && (
+            <div className="feature-list">
+              {refineFeatures.map((feature) => (
+                <span key={feature.name} className="feature-chip">
+                  <span className="swatch" style={{ background: cssColor(feature.color) }} />
+                  {feature.name}
+                </span>
+              ))}
+            </div>
+          )}
+        </Panel>
+      )}
 
       <Panel title="Rendered output">
         {renderedImages.length === 0 ? (

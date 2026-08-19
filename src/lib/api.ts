@@ -2,6 +2,8 @@ export interface JobSummary {
   name: string
   type: string
   status: string
+  hero?: string | null
+  updated?: number
 }
 
 export interface Candidate {
@@ -23,6 +25,13 @@ export interface JobStatus {
   rendered: string[]
   prompt: string
   style: string[]
+}
+
+export interface RefineStatus {
+  running: boolean
+  output: string
+  error?: string
+  features: { name: string; color?: number[] }[]
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
@@ -56,6 +65,10 @@ export const api = {
     }),
   run: (name: string, action: string) =>
     request<{ output: string }>(`/api/jobs/${encodeURIComponent(name)}/${action}`, { method: 'POST' }),
+  refine: (name: string) =>
+    request<{ running: boolean }>(`/api/jobs/${encodeURIComponent(name)}/refine`, { method: 'POST' }),
+  refineStatus: (name: string) =>
+    request<RefineStatus>(`/api/jobs/${encodeURIComponent(name)}/refine-status`),
   previewUrl: (name: string, file: string) => `/previews/${encodeURIComponent(name)}/${encodeURIComponent(file)}`,
   workUrl: (name: string, file: string) => `/work/${encodeURIComponent(name)}/${encodeURIComponent(file)}`,
   downloadUrl: (name: string) => `/download/${encodeURIComponent(name)}`,

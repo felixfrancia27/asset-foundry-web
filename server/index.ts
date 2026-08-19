@@ -64,6 +64,26 @@ function renderedFiles(name: string): string[] {
     .sort()
 }
 
+function jobHero(name: string): string | null {
+  const files = renderedFiles(name)
+  const hero =
+    files.find((f) => f.endsWith('clean.png')) ?? files.find((f) => !f.startsWith('review_'))
+  return hero ? `/work/${name}/${hero}` : null
+}
+
+function jobUpdated(name: string): number {
+  const dir = path.join(ASSET_FOUNDRY_DIR, 'jobs', name)
+  try {
+    const requestTime = fs.statSync(path.join(dir, 'request.json')).mtimeMs
+    const workTime = fs.existsSync(path.join(dir, 'work'))
+      ? fs.statSync(path.join(dir, 'work')).mtimeMs
+      : 0
+    return Math.max(requestTime, workTime)
+  } catch {
+    return 0
+  }
+}
+
 function requestInfo(name: string): { prompt: string; style: string[] } {
   const requestPath = path.join(ASSET_FOUNDRY_DIR, 'jobs', name, 'request.json')
   if (!fs.existsSync(requestPath)) return { prompt: '', style: [] }
@@ -82,8 +102,41 @@ const ACTIONS: Record<string, string> = {
   'render-building': 'render-building',
   'render-vehicle': 'render-vehicle',
   'render-character': 'render-character',
-  refine: 'refine',
   export: 'export-building',
+}
+
+type RefineState = {
+  running: boolean
+  output: string
+  error?: string
+}
+
+const refineJobs = new Map<string, RefineState>()
+
+function generationSpec(name: string): { features: { name: string; color?: number[] }[] } | null {
+  const specPath = path.join(ASSET_FOUNDRY_DIR, 'jobs', name, 'generation_spec.json')
+  if (!fs.existsSync(specPath)) return null
+  try {
+    return JSON.parse(fs.readFileSync(specPath, 'utf8'))
+  } catch {
+    return null
+  }
+}
+
+function runRefine(name: string) {
+  const state: RefineState = { running: true, output: '' }
+  refineJobs.set(name, state)
+  const child = spawn('python', ['-m', 'asset_foundry', 'refine', '--job', `jobs/${name}`], { cwd: ASSET_FOUNDRY_DIR })
+  child.stdout.on('data', (d) => (state.output += d.toString()))
+  child.stderr.on('data', (d) => (state.output += d.toString()))
+  child.on('error', (err) => {
+    state.error = err.message
+    state.running = false
+  })
+  child.on('close', (code) => {
+    state.running = false
+    if (code !== 0 && !state.error) state.error = `refine failed (exit ${code})`
+  })
 }
 
 app.get('/api/health', (_req, res) => {
@@ -93,7 +146,10 @@ app.get('/api/health', (_req, res) => {
 app.get('/api/jobs', async (_req, res) => {
   const { output, error } = await runCommand(['list-jobs'])
   if (error) return res.status(500).json({ error })
-  res.json(parseJson(output) ?? [])
+  const jobs = (parseJson(output) ?? []) as { name: string }[]
+  res.json(
+    jobs.map((job) => ({ ...job, hero: jobHero(job.name), updated: jobUpdated(job.name) })),
+  )
 })
 
 app.post('/api/jobs', async (req, res) => {
@@ -140,6 +196,26 @@ app.post('/api/jobs/:name/review', async (req, res) => {
   const { output, error } = await runCommand(args)
   if (error) return res.status(400).json({ error })
   res.json({ output })
+})
+
+app.post('/api/jobs/:name/refine', (req, res) => {
+  const name = req.params.name
+  const existing = refineJobs.get(name)
+  if (existing?.running) return res.status(409).json({ error: 'refine already running' })
+  runRefine(name)
+  res.json({ running: true })
+})
+
+app.get('/api/jobs/:name/refine-status', (req, res) => {
+  const name = req.params.name
+  const state = refineJobs.get(name)
+  const spec = generationSpec(name)
+  res.json({
+    running: state?.running ?? false,
+    output: state?.output ?? '',
+    error: state?.error,
+    features: spec?.features?.map((f) => ({ name: f.name, color: f.color })) ?? [],
+  })
 })
 
 app.post('/api/jobs/:name/:action', async (req, res) => {
