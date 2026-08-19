@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import express from 'express'
 import { spawn } from 'node:child_process'
 import fs from 'node:fs'
