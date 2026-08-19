@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, type JobStatus } from '../lib/api'
-import { Badge, Button, Panel, StatusBadge, EmptyState, Gallery } from '../components'
+import { Badge, Button, Panel, StatusBadge, TypeBadge, StatusTimeline, EmptyState, Gallery } from '../components'
 
 const STEPS_BY_TYPE: Record<string, { key: string; label: string; command: string }[]> = {
   building: [
@@ -101,11 +101,15 @@ export default function JobPage() {
           </h1>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <Badge>{job.type}</Badge>
+          <TypeBadge type={job.type} />
           <StatusBadge status={job.status} />
           <StatusBadge status={job.review_status} />
         </div>
       </div>
+
+      <Panel>
+        <StatusTimeline status={job.status} />
+      </Panel>
 
       {(job.prompt || job.style.length > 0) && (
         <Panel title="Generation">

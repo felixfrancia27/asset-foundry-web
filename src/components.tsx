@@ -20,6 +20,28 @@ export function StatusBadge({ status }: { status: string }) {
   return <Badge tone={STATUS_TONES[status]}>{status}</Badge>
 }
 
+export function TypeBadge({ type }: { type: string }) {
+  return <span className="badge" data-type={type}>{type}</span>
+}
+
+const LIFECYCLE = ['draft', 'in-progress', 'review', 'approved', 'exported']
+
+export function StatusTimeline({ status }: { status: string }) {
+  return (
+    <div className="timeline">
+      {LIFECYCLE.map((step, i) => (
+        <span key={step} style={{ display: 'flex', alignItems: 'center' }}>
+          {i > 0 && <span className="timeline-arrow">→</span>}
+          <span className="timeline-step" data-current={status === step}>
+            <span className="dot" />
+            {step}
+          </span>
+        </span>
+      ))}
+    </div>
+  )
+}
+
 export function Button({
   children,
   variant,

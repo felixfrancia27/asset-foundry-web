@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api, type JobSummary } from '../lib/api'
-import { Button, Panel, StatusBadge, EmptyState } from '../components'
+import { Button, Panel, StatusBadge, TypeBadge, EmptyState } from '../components'
 
 const EXAMPLES = [
   { label: 'Industrial building', name: 'my_factory', type: 'building', prompt: 'Square industrial factory with tanks, pipes, and chimneys' },
@@ -130,15 +130,17 @@ export default function JobsPage() {
             .filter((job) => job.name.toLowerCase().includes(query.toLowerCase()))
             .map((job) => (
               <Link key={job.name} to={`/jobs/${job.name}`}>
-                <Panel>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2 style={{ fontSize: 17 }}>{job.name}</h2>
-                    <StatusBadge status={job.status} />
-                  </div>
-                  <p className="muted" style={{ margin: '8px 0 0' }}>
-                    {job.type}
-                  </p>
-                </Panel>
+                <div className="job-card">
+                  <Panel>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <h2 style={{ fontSize: 17 }}>{job.name}</h2>
+                      <StatusBadge status={job.status} />
+                    </div>
+                    <div style={{ margin: '10px 0 0' }}>
+                      <TypeBadge type={job.type} />
+                    </div>
+                  </Panel>
+                </div>
               </Link>
             ))}
         </div>
