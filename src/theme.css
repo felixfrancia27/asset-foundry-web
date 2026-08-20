@@ -691,3 +691,96 @@ h3 {
   border-radius: 4px;
   display: inline-block;
 }
+
+/* Roster catalog */
+.roster-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.roster-tab {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.roster-tab:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.roster-tab.is-active {
+  color: #1a0f02;
+  background: linear-gradient(100deg, var(--accent-soft), var(--accent));
+  border-color: transparent;
+}
+
+.roster-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.asset-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.asset-card-head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.asset-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.asset-guide {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.asset-parts {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.asset-part-chip {
+  font-size: 11px;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.asset-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.asset-card .btn {
+  margin-top: auto;
+  align-self: flex-start;
+}

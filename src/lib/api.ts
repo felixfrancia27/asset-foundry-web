@@ -34,6 +34,37 @@ export interface RefineStatus {
   features: { name: string; color?: number[] }[]
 }
 
+export interface ManifestPartGroup {
+  role: string
+  description: string
+  count: number
+  required: boolean
+}
+
+export interface ManifestAsset {
+  id: string
+  name: string
+  category: string
+  tier: number | null
+  design_section: string
+  size_meters?: { x: number; y: number; z: number; note?: string } | null
+  cost?: { metal_tons?: number; cpus?: number; battery_packs?: number; power_kw?: number | null } | null
+  part_groups: ManifestPartGroup[]
+  rig: string
+  animations: string[]
+  visual_guide: string
+  upgrade_of?: string
+  module_role?: string
+  reference?: string | null
+}
+
+export interface Manifest {
+  game: string
+  categories: Record<string, { label: string }>
+  reference_blends: { path: string; kind: string; notes: string }[]
+  assets: ManifestAsset[]
+}
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init)
   if (!res.ok) {
@@ -43,12 +74,19 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  manifest: () => request<Manifest>('/api/manifest'),
   listJobs: () => request<JobSummary[]>('/api/jobs'),
   createJob: (name: string, prompt: string, type?: string) =>
     request<{ output: string; name: string }>('/api/jobs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, prompt, type }),
+    }),
+  createFromManifest: (manifestId: string) =>
+    request<{ output: string; name: string }>('/api/jobs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ manifest_id: manifestId }),
     }),
   addCandidate: (name: string, data: Record<string, string>) =>
     request<{ output: string }>(`/api/jobs/${encodeURIComponent(name)}/candidates`, {

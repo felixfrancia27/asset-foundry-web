@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { api, type JobSummary } from '../lib/api'
+import { api, type JobSummary, type Manifest, type ManifestAsset } from '../lib/api'
 import { Button, EmptyState, StatusBadge, TypeBadge } from '../components'
 
 const TYPES = [
@@ -139,6 +139,8 @@ export default function JobsPage() {
         {error && <p className="composer-error">{error}</p>}
       </section>
 
+      <RosterCatalog />
+
       <section className="section">
         <div className="section-title-row">
           <h2>Latest models</h2>
@@ -198,5 +200,132 @@ function ModelCard({ job }: { job: JobSummary }) {
         </div>
       </div>
     </Link>
+  )
+}
+
+const ROSTER_CATEGORIES = [
+  { value: '', label: 'All' },
+  { value: 'building', label: 'Buildings' },
+  { value: 'vehicle', label: 'Vehicles' },
+  { value: 'munition', label: 'Munitions' },
+  { value: 'prop', label: 'Props' },
+]
+
+function tierLabel(tier: number | null): string | null {
+  return tier === null ? null : `Tier ${tier}`
+}
+
+function sizeLabel(size?: ManifestAsset['size_meters']): string | null {
+  if (!size) return null
+  const dims = [size.x, size.y, size.z].filter((n) => typeof n === 'number')
+  return dims.length === 3 ? `${dims.join('×')} m` : null
+}
+
+function costParts(cost?: ManifestAsset['cost']): string[] {
+  if (!cost) return []
+  const parts: string[] = []
+  if (cost.metal_tons) parts.push(`${cost.metal_tons} t metal`)
+  if (cost.cpus) parts.push(`${cost.cpus} cpu`)
+  if (cost.battery_packs) parts.push(`${cost.battery_packs} batt`)
+  if (cost.power_kw) parts.push(`${cost.power_kw} kW`)
+  return parts
+}
+
+function RosterCatalog() {
+  const [manifest, setManifest] = useState<Manifest | null>(null)
+  const [category, setCategory] = useState('')
+  const [busyId, setBusyId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    api
+      .manifest()
+      .then(setManifest)
+      .catch((e) => setError(e.message))
+  }, [])
+
+  const assets = useMemo(() => {
+    if (!manifest) return []
+    const list = category ? manifest.assets.filter((a) => a.category === category) : manifest.assets
+    return [...list].sort((a, b) => (a.tier ?? 99) - (b.tier ?? 99) || a.name.localeCompare(b.name))
+  }, [manifest, category])
+
+  async function forge(asset: ManifestAsset) {
+    setBusyId(asset.id)
+    setError(null)
+    try {
+      const res = await api.createFromManifest(asset.id)
+      navigate(`/jobs/${res.name}`)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+      setBusyId(null)
+    }
+  }
+
+  return (
+    <section className="section">
+      <div className="section-title-row">
+        <h2>Lunar-RTS roster</h2>
+        <div className="roster-tabs">
+          {ROSTER_CATEGORIES.map((c) => (
+            <button
+              key={c.value}
+              className={`roster-tab ${category === c.value ? 'is-active' : ''}`}
+              onClick={() => setCategory(c.value)}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {error && <p className="composer-error">{error}</p>}
+
+      {!manifest ? (
+        <EmptyState>Loading roster…</EmptyState>
+      ) : assets.length === 0 ? (
+        <EmptyState>No assets in this category.</EmptyState>
+      ) : (
+        <div className="roster-grid">
+          {assets.map((asset) => (
+            <div key={asset.id} className="asset-card">
+              <div className="asset-card-head">
+                <span className="asset-name">{asset.name}</span>
+                <div className="model-badges">
+                  <TypeBadge type={asset.category} />
+                  {tierLabel(asset.tier) && <span className="badge">{tierLabel(asset.tier)}</span>}
+                </div>
+              </div>
+
+              <p className="asset-guide">{asset.visual_guide}</p>
+
+              <div className="asset-parts">
+                {asset.part_groups.map((pg) => (
+                  <span key={pg.role} className="asset-part-chip" title={pg.description}>
+                    {pg.role}
+                  </span>
+                ))}
+              </div>
+
+              <div className="asset-meta">
+                {sizeLabel(asset.size_meters) && <span>{sizeLabel(asset.size_meters)}</span>}
+                {costParts(asset.cost).map((c) => (
+                  <span key={c}>{c}</span>
+                ))}
+              </div>
+
+              <Button
+                variant="primary"
+                disabled={busyId !== null}
+                onClick={() => forge(asset)}
+              >
+                {busyId === asset.id ? 'Forging…' : 'Forge'}
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   )
 }
