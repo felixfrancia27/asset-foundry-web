@@ -80,6 +80,9 @@ export default function JobPage() {
   const [refineOutput, setRefineOutput] = useState('')
   const [refineFeatures, setRefineFeatures] = useState<RefineStatus['features']>([])
   const refineTimer = useRef<number | null>(null)
+  const [stepRunning, setStepRunning] = useState<string | null>(null)
+  const [stepOutput, setStepOutput] = useState('')
+  const stepTimer = useRef<number | null>(null)
 
   const reload = useCallback(() => {
     api
@@ -92,6 +95,7 @@ export default function JobPage() {
 
   useEffect(() => () => {
     if (refineTimer.current) clearInterval(refineTimer.current)
+    if (stepTimer.current) clearInterval(stepTimer.current)
   }, [])
 
   useEffect(() => {
@@ -132,6 +136,41 @@ export default function JobPage() {
     if (refineTimer.current) clearInterval(refineTimer.current)
     refineTimer.current = null
     setRefining(false)
+  }
+
+  function stopStep() {
+    if (stepTimer.current) clearInterval(stepTimer.current)
+    stepTimer.current = null
+    setStepRunning(null)
+  }
+
+  async function runStep(step: { label: string; command: string }) {
+    if (stepRunning) return
+    setStepRunning(step.label)
+    setStepOutput('')
+    setError(null)
+    try {
+      await api.run(name, step.command)
+    } catch (e) {
+      setStepRunning(null)
+      setToast({ message: e instanceof Error ? e.message : String(e), tone: 'error' })
+      return
+    }
+    stepTimer.current = window.setInterval(async () => {
+      try {
+        const status = await api.runStatus(name, step.command)
+        setStepOutput(status.output)
+        if (!status.running) {
+          stopStep()
+          if (status.error) setToast({ message: status.error, tone: 'error' })
+          else setToast({ message: `${step.label} done`, tone: 'ok' })
+          reload()
+        }
+      } catch (e) {
+        stopStep()
+        setToast({ message: e instanceof Error ? e.message : String(e), tone: 'error' })
+      }
+    }, 1500)
   }
 
   async function refine() {
@@ -226,14 +265,14 @@ export default function JobPage() {
             <Button
               key={step.key}
               variant={step.key === 'export' ? 'primary' : undefined}
-              disabled={busy !== null}
-              onClick={() => act(() => api.run(name, step.command), step.label)}
+              disabled={busy !== null || stepRunning !== null}
+              onClick={() => runStep(step)}
             >
-              {busy === step.label ? 'Working…' : step.label}
+              {stepRunning === step.label ? 'Working…' : step.label}
             </Button>
           ))}
           <Button
-            disabled={busy !== null || refining}
+            disabled={busy !== null || refining || stepRunning !== null}
             onClick={refine}
           >
             {refining ? 'Refining…' : 'Refine'}
@@ -248,6 +287,21 @@ export default function JobPage() {
             </span>
           )}
         </div>
+
+        {(stepRunning || stepOutput) && (
+          <div className="step-output">
+            <div className="refine-status">
+              {stepRunning ? (
+                <>
+                  <Spinner /> Running {stepRunning}…
+                </>
+              ) : (
+                <span className="refine-done">Step finished</span>
+              )}
+            </div>
+            {stepOutput && <pre className="step-log">{stepOutput}</pre>}
+          </div>
+        )}
       </Panel>
 
       {(refining || refineOutput || refineFeatures.length > 0) && (
