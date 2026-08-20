@@ -143,6 +143,12 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true, assetFoundryDir: ASSET_FOUNDRY_DIR })
 })
 
+app.get('/api/manifest', async (_req, res) => {
+  const { output, error } = await runCommand(['manifest'])
+  if (error) return res.status(500).json({ error })
+  res.json(parseJson(output) ?? { assets: [] })
+})
+
 app.get('/api/jobs', async (_req, res) => {
   const { output, error } = await runCommand(['list-jobs'])
   if (error) return res.status(500).json({ error })
@@ -153,7 +159,15 @@ app.get('/api/jobs', async (_req, res) => {
 })
 
 app.post('/api/jobs', async (req, res) => {
-  const { name, prompt, type } = req.body || {}
+  const { name, prompt, type, manifest_id } = req.body || {}
+
+  if (manifest_id) {
+    const { output, error } = await runCommand(['init-from-manifest', '--asset-id', String(manifest_id)])
+    if (error) return res.status(400).json({ error })
+    res.json({ output, name: String(manifest_id) })
+    return
+  }
+
   if (!name || !prompt) return res.status(400).json({ error: 'name and prompt are required' })
   const args = ['init-job', '--name', String(name), '--prompt', String(prompt)]
   if (type) args.push('--type', String(type))
