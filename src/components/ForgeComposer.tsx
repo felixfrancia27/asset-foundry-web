@@ -58,7 +58,7 @@ export default function ForgeComposer() {
       <div className="composer-head">
         <h1 className="composer-title">Forge a new asset</h1>
         <p className="composer-sub">
-          Describe it in plain words, or pick one straight from the classic-wgl roster.
+          Describe it in plain words, or pick one from the roster to get started.
         </p>
       </div>
 
