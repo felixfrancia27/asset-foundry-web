@@ -48,6 +48,22 @@ function cssColor(color?: number[]) {
   return `rgb(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)})`
 }
 
+function formatSize(size?: JobStatus['size_meters']): string | null {
+  if (!size) return null
+  const dims = [size.x, size.y, size.z].filter((n) => typeof n === 'number')
+  return dims.length === 3 ? `${dims.join('×')} m` : null
+}
+
+function formatCost(cost?: JobStatus['cost']): string[] {
+  if (!cost) return []
+  const parts: string[] = []
+  if (cost.metal_tons) parts.push(`${cost.metal_tons} t metal`)
+  if (cost.cpus) parts.push(`${cost.cpus} cpu`)
+  if (cost.battery_packs) parts.push(`${cost.battery_packs} batt`)
+  if (cost.power_kw) parts.push(`${cost.power_kw} kW`)
+  return parts
+}
+
 const STEPS_BY_TYPE: Record<string, { key: string; label: string; command: string }[]> = {
   building: [
     { key: 'compose-building', label: 'Compose', command: 'compose-building' },
@@ -259,6 +275,28 @@ export default function JobPage() {
         </Panel>
       )}
 
+      {(job.manifest_id || job.parts || job.size_meters || job.cost) && (
+        <Panel title="Design">
+          <div className="design-row">
+            {job.manifest_id && <span className="muted">roster: <strong>{job.manifest_id}</strong></span>}
+            {formatSize(job.size_meters) && <span className="muted">{formatSize(job.size_meters)}</span>}
+            {formatCost(job.cost).map((c) => (
+              <span key={c} className="muted">{c}</span>
+            ))}
+            {typeof job.recommended_ppm === 'number' && (
+              <span className="muted">{job.recommended_ppm} px/m</span>
+            )}
+          </div>
+          {job.parts && job.parts.length > 0 && (
+            <div className="feature-list" style={{ marginTop: 12 }}>
+              {job.parts.map((part) => (
+                <span key={part} className="feature-chip">{part}</span>
+              ))}
+            </div>
+          )}
+        </Panel>
+      )}
+
       <Panel title="Pipeline">
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           {(STEPS_BY_TYPE[job.type] || STEPS_BY_TYPE.building).map((step) => (
@@ -356,9 +394,9 @@ export default function JobPage() {
         {renderedImages.length === 0 ? (
           <p className="muted">Nothing rendered yet — run a render step above.</p>
         ) : (
-          <>
+          <div className="compare">
             {heroFile && (
-              <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              <div className="compare-hero">
                 <img
                   src={api.workUrl(name, heroFile)}
                   alt="Clean render"
@@ -377,12 +415,12 @@ export default function JobPage() {
               </div>
             )}
             {atlasFiles.length > 0 && (
-              <>
+              <div className="compare-atlas">
                 <div className="section-label">Spritesheet atlas (8 directions × frames)</div>
                 <Gallery images={atlasFiles} />
-              </>
+              </div>
             )}
-          </>
+          </div>
         )}
       </Panel>
 

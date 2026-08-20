@@ -25,6 +25,11 @@ export interface JobStatus {
   rendered: string[]
   prompt: string
   style: string[]
+  manifest_id?: string
+  parts?: string[]
+  size_meters?: { x: number; y: number; z: number; note?: string } | null
+  cost?: { metal_tons?: number; cpus?: number; battery_packs?: number; power_kw?: number | null } | null
+  recommended_ppm?: number
 }
 
 export interface RefineStatus {
