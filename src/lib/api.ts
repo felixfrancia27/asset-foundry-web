@@ -102,7 +102,11 @@ export const api = {
       body: JSON.stringify({ role, action, id }),
     }),
   run: (name: string, action: string) =>
-    request<{ output: string }>(`/api/jobs/${encodeURIComponent(name)}/${action}`, { method: 'POST' }),
+    request<{ running: boolean }>(`/api/jobs/${encodeURIComponent(name)}/${action}`, { method: 'POST' }),
+  runStatus: (name: string, action: string) =>
+    request<{ running: boolean; output: string; error?: string }>(
+      `/api/jobs/${encodeURIComponent(name)}/${action}/status`,
+    ),
   refine: (name: string) =>
     request<{ running: boolean }>(`/api/jobs/${encodeURIComponent(name)}/refine`, { method: 'POST' }),
   refineStatus: (name: string) =>

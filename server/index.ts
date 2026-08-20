@@ -113,6 +113,37 @@ type RefineState = {
 
 const refineJobs = new Map<string, RefineState>()
 
+type StepState = {
+  running: boolean
+  output: string
+  error?: string
+}
+
+const stepJobs = new Map<string, StepState>()
+
+function stepKey(name: string, action: string): string {
+  return `${name}:${action}`
+}
+
+function startStep(name: string, action: string, command: string) {
+  const key = stepKey(name, action)
+  const state: StepState = { running: true, output: '' }
+  stepJobs.set(key, state)
+  const args = [command, '--job', `jobs/${name}`]
+  if (command === 'export-building') args.push('--zip')
+  const child = spawn('python', ['-m', 'asset_foundry', ...args], { cwd: ASSET_FOUNDRY_DIR })
+  child.stdout.on('data', (d) => (state.output += d.toString()))
+  child.stderr.on('data', (d) => (state.output += d.toString()))
+  child.on('error', (err) => {
+    state.error = err.message
+    state.running = false
+  })
+  child.on('close', (code) => {
+    state.running = false
+    if (code !== 0 && !state.error) state.error = `step failed (exit ${code})`
+  })
+}
+
 function generationSpec(name: string): { features: { name: string; color?: number[] }[] } | null {
   const specPath = path.join(ASSET_FOUNDRY_DIR, 'jobs', name, 'generation_spec.json')
   if (!fs.existsSync(specPath)) return null
@@ -232,15 +263,26 @@ app.get('/api/jobs/:name/refine-status', (req, res) => {
   })
 })
 
-app.post('/api/jobs/:name/:action', async (req, res) => {
+app.post('/api/jobs/:name/:action', (req, res) => {
   const name = req.params.name
   const command = ACTIONS[req.params.action]
   if (!command) return res.status(404).json({ error: `unknown action: ${req.params.action}` })
-  const args = [command, '--job', `jobs/${name}`]
-  if (command === 'export-building') args.push('--zip')
-  const { output, error } = await runCommand(args)
-  if (error) return res.status(400).json({ error })
-  res.json({ output })
+  const key = stepKey(name, req.params.action)
+  if (stepJobs.get(key)?.running) return res.status(409).json({ error: 'step already running' })
+  startStep(name, req.params.action, command)
+  res.json({ running: true })
+})
+
+app.get('/api/jobs/:name/:action/status', (req, res) => {
+  const name = req.params.name
+  const command = ACTIONS[req.params.action]
+  if (!command) return res.status(404).json({ error: `unknown action: ${req.params.action}` })
+  const state = stepJobs.get(stepKey(name, req.params.action))
+  res.json({
+    running: state?.running ?? false,
+    output: state?.output ?? '',
+    error: state?.error,
+  })
 })
 
 app.get('/previews/:name/:file', (req, res) => {
