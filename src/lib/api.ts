@@ -73,7 +73,15 @@ export interface Manifest {
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init)
   if (!res.ok) {
-    throw new Error((await res.text().catch(() => res.statusText)) || res.statusText)
+    const text = await res.text().catch(() => res.statusText)
+    let message = text || res.statusText
+    try {
+      const body = JSON.parse(text)
+      if (body && typeof body.error === 'string') message = body.error
+    } catch {
+      // keep the raw text
+    }
+    throw new Error(message)
   }
   return res.json() as Promise<T>
 }

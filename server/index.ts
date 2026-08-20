@@ -193,9 +193,15 @@ app.post('/api/jobs', async (req, res) => {
   const { name, prompt, type, manifest_id } = req.body || {}
 
   if (manifest_id) {
-    const { output, error } = await runCommand(['init-from-manifest', '--asset-id', String(manifest_id)])
+    const name = String(manifest_id)
+    const jobDir = path.join(ASSET_FOUNDRY_DIR, 'jobs', name)
+    if (fs.existsSync(path.join(jobDir, 'request.json'))) {
+      res.json({ output: 'job already exists', name })
+      return
+    }
+    const { output, error } = await runCommand(['init-from-manifest', '--asset-id', name])
     if (error) return res.status(400).json({ error })
-    res.json({ output, name: String(manifest_id) })
+    res.json({ output, name })
     return
   }
 
