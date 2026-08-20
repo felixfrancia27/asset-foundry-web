@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { api, type ManifestAsset } from '../lib/api'
 import { costParts, sizeLabel, tierLabel, useManifest } from '../lib/roster'
 import { Button, EmptyState, TypeBadge } from '../components'
@@ -11,8 +11,6 @@ const ROSTER_CATEGORIES = [
   { value: 'munition', label: 'Munitions' },
   { value: 'prop', label: 'Props' },
 ]
-
-const FEATURED = ['glv', 'mre_refinery', 'lulv', 'chemical_plant', 'he_missile', 'cargo_container']
 
 export function AssetCard({
   asset,
@@ -125,45 +123,6 @@ export function RosterCatalog() {
           ))}
         </div>
       )}
-    </section>
-  )
-}
-
-export function RosterStrip() {
-  const { manifest } = useManifest()
-  const navigate = useNavigate()
-  const [busyId, setBusyId] = useState<string | null>(null)
-
-  const featured = useMemo(() => {
-    if (!manifest) return []
-    return FEATURED.map((id) => manifest.assets.find((a) => a.id === id)).filter(Boolean) as ManifestAsset[]
-  }, [manifest])
-
-  if (!manifest) return null
-
-  async function forge(id: string) {
-    setBusyId(id)
-    try {
-      const res = await api.createFromManifest(id)
-      navigate(`/jobs/${res.name}`)
-    } catch {
-      setBusyId(null)
-    }
-  }
-
-  return (
-    <section className="section">
-      <div className="section-title-row">
-        <h2>From the roster</h2>
-        <Link to="/roster" className="muted" style={{ fontSize: 13 }}>
-          Browse all →
-        </Link>
-      </div>
-      <div className="roster-grid">
-        {featured.map((asset) => (
-          <AssetCard key={asset.id} asset={asset} onForge={forge} busy={busyId === asset.id} />
-        ))}
-      </div>
     </section>
   )
 }

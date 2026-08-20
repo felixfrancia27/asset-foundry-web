@@ -2,9 +2,26 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, type JobSummary } from '../lib/api'
 import ForgeComposer from '../components/ForgeComposer'
-import { RosterStrip } from '../components/Roster'
 import ModelCard from '../components/ModelCard'
 import { EmptyState } from '../components'
+
+const STEPS = [
+  {
+    n: '1',
+    title: 'Forge',
+    body: 'Describe it in plain words, or pick one straight from the roster.',
+  },
+  {
+    n: '2',
+    title: 'Refine',
+    body: 'Review the generated model and iterate with AI-assisted feedback.',
+  },
+  {
+    n: '3',
+    title: 'Render & export',
+    body: 'Get 8-direction spritesheets and a self-contained zip.',
+  },
+]
 
 export default function HomePage() {
   const [jobs, setJobs] = useState<JobSummary[] | null>(null)
@@ -24,30 +41,24 @@ export default function HomePage() {
 
   return (
     <div>
-      <section className="hero">
-        <div className="hero-copy">
-          <span className="hero-kicker">The forge behind</span>
-          <h1 className="hero-title">
-            <span className="molten">classic-wgl</span>
-          </h1>
-          <p className="hero-sub">
-            Generate, review and export the lunar-RTS asset roster — units, buildings, props and
-            munitions — straight into the game's engine.
-          </p>
-          <div className="hero-actions">
-            <Link to="/roster" className="btn btn-primary">
-              Browse the roster
-            </Link>
-            <Link to="/models" className="btn">
-              View models
-            </Link>
-          </div>
-        </div>
-      </section>
-
       <ForgeComposer />
 
-      <RosterStrip />
+      <section className="section">
+        <div className="section-title-row">
+          <h2>How it works</h2>
+        </div>
+        <div className="flow-steps">
+          {STEPS.map((step) => (
+            <div key={step.n} className="flow-step">
+              <span className="flow-step-n">{step.n}</span>
+              <div>
+                <span className="flow-step-title">{step.title}</span>
+                <p className="flow-step-body">{step.body}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <section className="section">
         <div className="section-title-row">

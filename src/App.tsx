@@ -26,17 +26,6 @@ export default function App() {
             Models
           </NavLink>
         </nav>
-
-        <a
-          className="game-chip"
-          href="https://github.com/guilledk/classic-wgl"
-          target="_blank"
-          rel="noreferrer"
-          title="The game engine this forge feeds"
-        >
-          <span className="game-chip-dot" />
-          classic-wgl
-        </a>
       </header>
 
       <Routes>
