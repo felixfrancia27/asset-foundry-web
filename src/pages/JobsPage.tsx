@@ -4,9 +4,10 @@ import { api, type JobSummary } from '../lib/api'
 import { Button, EmptyState, StatusBadge, TypeBadge } from '../components'
 
 const TYPES = [
-  { value: 'building', label: 'Building', hint: 'Factories, towers, props' },
-  { value: 'vehicle', label: 'Vehicle', hint: 'Tanks, ships, trucks' },
+  { value: 'building', label: 'Building', hint: 'Factories, towers, pads' },
+  { value: 'vehicle', label: 'Vehicle', hint: 'Rovers, tanks, trucks' },
   { value: 'character', label: 'Character', hint: 'Heroes, NPCs, creatures' },
+  { value: 'prop', label: 'Prop', hint: 'Containers, ammo, resources' },
 ]
 
 const EXAMPLES = [
