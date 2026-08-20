@@ -63,6 +63,10 @@ const STEPS_BY_TYPE: Record<string, { key: string; label: string; command: strin
     { key: 'render-character', label: 'Render character', command: 'render-character' },
     { key: 'export', label: 'Export + zip', command: 'export' },
   ],
+  prop: [
+    { key: 'render-building', label: 'Render spritesheet', command: 'render-building' },
+    { key: 'export', label: 'Export + zip', command: 'export' },
+  ],
 }
 
 export default function JobPage() {

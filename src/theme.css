@@ -140,6 +140,12 @@ h3 {
   background: color-mix(in srgb, var(--ok) 12%, transparent);
 }
 
+.badge[data-type='prop'] {
+  color: #c4b5fd;
+  border-color: color-mix(in srgb, #c4b5fd 40%, transparent);
+  background: color-mix(in srgb, #c4b5fd 12%, transparent);
+}
+
 /* Status timeline */
 .timeline {
   display: flex;
