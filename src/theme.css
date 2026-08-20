@@ -713,6 +713,41 @@ h3 {
   white-space: pre-wrap;
 }
 
+/* Design metadata + compare layout */
+.design-row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.compare {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.compare-hero {
+  text-align: center;
+}
+
+.compare-atlas .section-label {
+  margin-top: 0;
+}
+
+@media (min-width: 760px) {
+  .compare {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .compare-hero {
+    position: sticky;
+    top: 16px;
+  }
+}
+
 /* Roster catalog */
 .roster-tabs {
   display: flex;
