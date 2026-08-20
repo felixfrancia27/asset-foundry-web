@@ -65,10 +65,16 @@ h3 {
 .app-header {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 8px 0 24px;
+  gap: 18px;
+  padding: 8px 0 20px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 28px;
+}
+
+.app-header .brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .app-header .logo {
@@ -79,9 +85,117 @@ h3 {
 .app-header .wordmark {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 20px;
-  letter-spacing: 0.08em;
+  font-size: 18px;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+/* Top navigation */
+.topnav {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+  flex: 1;
+}
+
+.nav-link {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  padding: 8px 14px;
+  border-radius: 8px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.nav-link:hover {
+  color: var(--text);
+}
+
+.nav-link.active {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.game-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border-radius: 999px;
+  padding: 6px 14px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.game-chip:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.game-chip-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+/* Hero */
+.hero {
+  background:
+    radial-gradient(700px 260px at 80% -20%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 60%),
+    var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 40px 36px;
+  margin-bottom: 28px;
+}
+
+.hero-copy {
+  max-width: 620px;
+}
+
+.hero-kicker {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.hero-title {
+  font-size: 40px;
+  margin: 8px 0 12px;
+}
+
+.hero-sub {
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 0 0 22px;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Page head */
+.page-head {
+  margin-bottom: 24px;
+}
+
+.page-title {
+  font-size: 26px;
 }
 
 .panel {
@@ -753,6 +867,15 @@ h3 {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+}
+
+.roster-head {
+  flex-wrap: wrap;
+}
+
+.roster-search {
+  margin-bottom: 18px;
+  max-width: 360px;
 }
 
 .roster-tab {
