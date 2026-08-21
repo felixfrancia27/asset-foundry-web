@@ -95,6 +95,7 @@ export default function JobPage() {
   const [refining, setRefining] = useState(false)
   const [refineOutput, setRefineOutput] = useState('')
   const [refineFeatures, setRefineFeatures] = useState<RefineStatus['features']>([])
+  const [rounds, setRounds] = useState(3)
   const refineTimer = useRef<number | null>(null)
   const [stepRunning, setStepRunning] = useState<string | null>(null)
   const [stepOutput, setStepOutput] = useState('')
@@ -195,7 +196,7 @@ export default function JobPage() {
     setRefineOutput('')
     setError(null)
     try {
-      await api.refine(name)
+      await api.refine(name, rounds)
     } catch (e) {
       setRefining(false)
       setToast({ message: e instanceof Error ? e.message : String(e), tone: 'error' })
@@ -297,6 +298,71 @@ export default function JobPage() {
         </Panel>
       )}
 
+      <Panel title="Refine">
+        <p className="muted" style={{ margin: '0 0 14px' }}>
+          Run the AI agent to review the render, fix integration issues and add detail. Each round reviews, repairs and adds more features.
+        </p>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="rounds-stepper">
+            <span className="muted" style={{ fontSize: 13 }}>Rounds</span>
+            <button className="stepper-btn" disabled={refining} onClick={() => setRounds((r) => Math.max(1, r - 1))}>−</button>
+            <span className="stepper-value">{rounds}</span>
+            <button className="stepper-btn" disabled={refining} onClick={() => setRounds((r) => Math.min(20, r + 1))}>+</button>
+          </div>
+          <Button variant="primary" disabled={busy !== null || refining || stepRunning !== null} onClick={refine}>
+            {refining ? 'Refining…' : `Refine ×${rounds}`}
+          </Button>
+        </div>
+
+        {(refining || refineOutput || refineFeatures.length > 0) && (
+          <div className="refine-progress">
+            {refining ? (
+              <div className="refine-status">
+                <Spinner /> Refining — round {currentRound} · {refineFeatures.length} parts
+              </div>
+            ) : (
+              refineRounds.complete && (
+                <div className="refine-status refine-done">Refine complete · {refineFeatures.length} parts</div>
+              )
+            )}
+
+            {refineRounds.rounds.length > 0 && (
+              <ol className="refine-rounds">
+                {refineRounds.rounds.map((round) => (
+                  <li key={round.n}>
+                    <div className="refine-round-head">
+                      <span className="refine-round-n">Round {round.n}</span>
+                      {round.before !== undefined && round.after !== undefined && (
+                        <span
+                          className={`refine-delta ${
+                            round.after < round.before ? 'is-good' : round.after > round.before ? 'is-warn' : ''
+                          }`}
+                        >
+                          integration {round.before} → {round.after}
+                        </span>
+                      )}
+                      {round.features !== undefined && <span className="muted">{round.features} parts</span>}
+                    </div>
+                    {round.critique && <p className="refine-critique">{round.critique}</p>}
+                  </li>
+                ))}
+              </ol>
+            )}
+
+            {refineFeatures.length > 0 && (
+              <div className="feature-list">
+                {refineFeatures.map((feature) => (
+                  <span key={feature.name} className="feature-chip">
+                    <span className="swatch" style={{ background: cssColor(feature.color) }} />
+                    {feature.name}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </Panel>
+
       <Panel title="Pipeline">
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           {(STEPS_BY_TYPE[job.type] || STEPS_BY_TYPE.building).map((step) => (
@@ -309,12 +375,6 @@ export default function JobPage() {
               {stepRunning === step.label ? 'Working…' : step.label}
             </Button>
           ))}
-          <Button
-            disabled={busy !== null || refining || stepRunning !== null}
-            onClick={refine}
-          >
-            {refining ? 'Refining…' : 'Refine'}
-          </Button>
           {job.artifacts.zip ? (
             <a href={api.downloadUrl(name)} download>
               <Button variant="primary">Download zip</Button>
@@ -341,54 +401,6 @@ export default function JobPage() {
           </div>
         )}
       </Panel>
-
-      {(refining || refineOutput || refineFeatures.length > 0) && (
-        <Panel title="Refine">
-          {refining ? (
-            <div className="refine-status">
-              <Spinner /> Refining — round {currentRound} · {refineFeatures.length} parts
-            </div>
-          ) : (
-            refineRounds.complete && (
-              <div className="refine-status refine-done">Refine complete · {refineFeatures.length} parts</div>
-            )
-          )}
-
-          {refineRounds.rounds.length > 0 && (
-            <ol className="refine-rounds">
-              {refineRounds.rounds.map((round) => (
-                <li key={round.n}>
-                  <div className="refine-round-head">
-                    <span className="refine-round-n">Round {round.n}</span>
-                    {round.before !== undefined && round.after !== undefined && (
-                      <span
-                        className={`refine-delta ${
-                          round.after < round.before ? 'is-good' : round.after > round.before ? 'is-warn' : ''
-                        }`}
-                      >
-                        integration {round.before} → {round.after}
-                      </span>
-                    )}
-                    {round.features !== undefined && <span className="muted">{round.features} parts</span>}
-                  </div>
-                  {round.critique && <p className="refine-critique">{round.critique}</p>}
-                </li>
-              ))}
-            </ol>
-          )}
-
-          {refineFeatures.length > 0 && (
-            <div className="feature-list">
-              {refineFeatures.map((feature) => (
-                <span key={feature.name} className="feature-chip">
-                  <span className="swatch" style={{ background: cssColor(feature.color) }} />
-                  {feature.name}
-                </span>
-              ))}
-            </div>
-          )}
-        </Panel>
-      )}
 
       <Panel title="Rendered output">
         {renderedImages.length === 0 ? (

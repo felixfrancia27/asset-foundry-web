@@ -781,6 +781,52 @@ h3 {
   display: inline-block;
 }
 
+/* Rounds stepper */
+.rounds-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 10px;
+}
+
+.stepper-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 15px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.stepper-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.stepper-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.stepper-value {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.refine-progress {
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
 /* Live step output */
 .step-output {
   margin-top: 16px;
