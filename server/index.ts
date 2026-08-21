@@ -154,9 +154,21 @@ function generationSpec(name: string): { features: { name: string; color?: numbe
   }
 }
 
+function snapshotBefore(name: string) {
+  const workDir = path.join(ASSET_FOUNDRY_DIR, 'jobs', name, 'work')
+  const src = ['clean.png', 'spritesheet.png'].find((f) => fs.existsSync(path.join(workDir, f)))
+  if (!src) return
+  try {
+    fs.copyFileSync(path.join(workDir, src), path.join(workDir, 'refine_before.png'))
+  } catch {
+    // snapshot is best-effort
+  }
+}
+
 function runRefine(name: string, rounds: number) {
   const state: RefineState = { running: true, output: '' }
   refineJobs.set(name, state)
+  snapshotBefore(name)
   const args = ['refine', '--job', `jobs/${name}`, '--rounds', String(Math.max(1, Math.min(20, rounds)))]
   const child = spawn('python', ['-m', 'asset_foundry', ...args], { cwd: ASSET_FOUNDRY_DIR })
   child.stdout.on('data', (d) => (state.output += d.toString()))
