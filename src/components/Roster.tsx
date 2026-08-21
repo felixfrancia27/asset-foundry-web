@@ -28,6 +28,8 @@ export function AssetCard({
         <div className="model-badges">
           <TypeBadge type={asset.category} />
           {tierLabel(asset.tier) && <span className="badge">{tierLabel(asset.tier)}</span>}
+          {asset.upgrade_of && <span className="badge upgrade-badge">chassis: {asset.upgrade_of}</span>}
+          {asset.module_role && <span className="badge upgrade-badge">+ {asset.module_role}</span>}
         </div>
       </div>
 
@@ -69,7 +71,15 @@ export function RosterCatalog() {
     const byQuery = query
       ? byCat.filter((a) => (a.name + a.id + a.visual_guide).toLowerCase().includes(query.toLowerCase()))
       : byCat
-    return [...byQuery].sort((a, b) => (a.tier ?? 99) - (b.tier ?? 99) || a.name.localeCompare(b.name))
+    return [...byQuery].sort((a, b) => {
+      const ga = a.upgrade_of ?? a.id
+      const gb = b.upgrade_of ?? b.id
+      if (ga !== gb) return ga.localeCompare(gb)
+      const baseA = a.upgrade_of ? 1 : 0
+      const baseB = b.upgrade_of ? 1 : 0
+      if (baseA !== baseB) return baseA - baseB
+      return (a.tier ?? 99) - (b.tier ?? 99) || a.name.localeCompare(b.name)
+    })
   }, [manifest, category, query])
 
   async function forge(id: string) {
