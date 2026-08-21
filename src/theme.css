@@ -235,6 +235,12 @@ h3 {
   background: color-mix(in srgb, #c4b5fd 12%, transparent);
 }
 
+.badge.upgrade-badge {
+  color: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
 /* Status timeline */
 .timeline {
   display: flex;
