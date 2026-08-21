@@ -262,6 +262,17 @@ app.post('/api/jobs/:name/review', async (req, res) => {
   res.json({ output })
 })
 
+app.delete('/api/jobs/:name', (req, res) => {
+  const name = req.params.name
+  if (!/^[a-z0-9_]+$/.test(name)) return res.status(400).send('bad path')
+  const jobDir = path.join(ASSET_FOUNDRY_DIR, 'jobs', name)
+  if (!fs.existsSync(jobDir)) return res.status(404).json({ error: 'job not found' })
+  fs.rmSync(jobDir, { recursive: true, force: true })
+  const zipPath = path.join(ASSET_FOUNDRY_DIR, 'output', `${name}.zip`)
+  if (fs.existsSync(zipPath)) fs.rmSync(zipPath, { force: true })
+  res.json({ ok: true })
+})
+
 app.post('/api/jobs/:name/refine', (req, res) => {
   const name = req.params.name
   const existing = refineJobs.get(name)

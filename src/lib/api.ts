@@ -120,6 +120,8 @@ export const api = {
     request<{ running: boolean; output: string; error?: string }>(
       `/api/jobs/${encodeURIComponent(name)}/${action}/status`,
     ),
+  deleteJob: (name: string) =>
+    request<{ ok: boolean }>(`/api/jobs/${encodeURIComponent(name)}`, { method: 'DELETE' }),
   refine: (name: string, rounds = 3) =>
     request<{ running: boolean }>(`/api/jobs/${encodeURIComponent(name)}/refine`, {
       method: 'POST',
