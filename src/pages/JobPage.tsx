@@ -9,6 +9,7 @@ interface RoundInfo {
   after?: number
   features?: number
   critique?: string
+  aesthetic?: number
 }
 
 function parseRounds(output: string): { rounds: RoundInfo[]; complete: boolean } {
@@ -26,6 +27,13 @@ function parseRounds(output: string): { rounds: RoundInfo[]; complete: boolean }
     if (m) {
       const r = byRound.get(Number(m[1])) ?? { n: Number(m[1]) }
       r.critique = m[2]
+      byRound.set(r.n, r)
+      continue
+    }
+    m = line.match(/round (\d+): aesthetic (\d+)\/10/)
+    if (m) {
+      const r = byRound.get(Number(m[1])) ?? { n: Number(m[1]) }
+      r.aesthetic = Number(m[2])
       byRound.set(r.n, r)
       continue
     }
@@ -341,12 +349,32 @@ export default function JobPage() {
                           integration {round.before} → {round.after}
                         </span>
                       )}
+                      {round.aesthetic !== undefined && (
+                        <span className="refine-aesthetic">aesthetic {round.aesthetic}/10</span>
+                      )}
                       {round.features !== undefined && <span className="muted">{round.features} parts</span>}
                     </div>
                     {round.critique && <p className="refine-critique">{round.critique}</p>}
                   </li>
                 ))}
               </ol>
+            )}
+
+            {refineRounds.complete && heroFile && (
+              <div className="refine-compare">
+                <div className="compare-cell">
+                  <img
+                    src={api.workUrl(name, 'refine_before.png')}
+                    alt="Before refine"
+                    onError={(e) => (e.currentTarget.style.display = 'none')}
+                  />
+                  <span className="muted">Before</span>
+                </div>
+                <div className="compare-cell">
+                  <img src={api.workUrl(name, heroFile)} alt="After refine" />
+                  <span className="muted">After</span>
+                </div>
+              </div>
             )}
 
             {refineFeatures.length > 0 && (
