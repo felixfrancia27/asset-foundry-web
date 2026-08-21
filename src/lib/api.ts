@@ -120,8 +120,12 @@ export const api = {
     request<{ running: boolean; output: string; error?: string }>(
       `/api/jobs/${encodeURIComponent(name)}/${action}/status`,
     ),
-  refine: (name: string) =>
-    request<{ running: boolean }>(`/api/jobs/${encodeURIComponent(name)}/refine`, { method: 'POST' }),
+  refine: (name: string, rounds = 3) =>
+    request<{ running: boolean }>(`/api/jobs/${encodeURIComponent(name)}/refine`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rounds }),
+    }),
   refineStatus: (name: string) =>
     request<RefineStatus>(`/api/jobs/${encodeURIComponent(name)}/refine-status`),
   previewUrl: (name: string, file: string) => `/previews/${encodeURIComponent(name)}/${encodeURIComponent(file)}`,

@@ -154,10 +154,11 @@ function generationSpec(name: string): { features: { name: string; color?: numbe
   }
 }
 
-function runRefine(name: string) {
+function runRefine(name: string, rounds: number) {
   const state: RefineState = { running: true, output: '' }
   refineJobs.set(name, state)
-  const child = spawn('python', ['-m', 'asset_foundry', 'refine', '--job', `jobs/${name}`], { cwd: ASSET_FOUNDRY_DIR })
+  const args = ['refine', '--job', `jobs/${name}`, '--rounds', String(Math.max(1, Math.min(20, rounds)))]
+  const child = spawn('python', ['-m', 'asset_foundry', ...args], { cwd: ASSET_FOUNDRY_DIR })
   child.stdout.on('data', (d) => (state.output += d.toString()))
   child.stderr.on('data', (d) => (state.output += d.toString()))
   child.on('error', (err) => {
@@ -253,7 +254,8 @@ app.post('/api/jobs/:name/refine', (req, res) => {
   const name = req.params.name
   const existing = refineJobs.get(name)
   if (existing?.running) return res.status(409).json({ error: 'refine already running' })
-  runRefine(name)
+  const rounds = Number((req.body || {}).rounds) || 3
+  runRefine(name, rounds)
   res.json({ running: true })
 })
 
