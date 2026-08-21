@@ -46,9 +46,26 @@ This starts:
 | Method | Path | Description |
 | ------ | ---- | ----------- |
 | GET | `/api/health` | liveness + resolved asset-foundry dir |
+| GET | `/api/manifest` | the lunar-RTS roster (JSON) |
 | GET | `/api/jobs` | list jobs |
-| GET | `/api/jobs/:name` | job status + preview file list |
+| POST | `/api/jobs` | forge a job (`prompt`/`type`, or `manifest_id` from the roster) |
+| DELETE | `/api/jobs/:name` | delete a job + its export |
+| GET | `/api/jobs/:name` | job status + design metadata + preview/rendered file list |
 | POST | `/api/jobs/:name/review` | approve/reject a part |
-| POST | `/api/jobs/:name/:action` | run a pipeline step (compose-building, render-previews, render-building, export) |
+| POST | `/api/jobs/:name/refine` | run the agent refine loop (`rounds`) |
+| GET | `/api/jobs/:name/refine-status` | refine progress + features |
+| POST | `/api/jobs/:name/:action` | run a pipeline step (compose, render-*, export) |
+| GET | `/api/jobs/:name/:action/status` | step progress |
 | GET | `/previews/:name/:file` | serve a preview image |
+| GET | `/work/:name/:file` | serve a work image (renders, snapshots) |
 | GET | `/download/:name` | serve the deliverable zip |
+
+## Pages
+
+- **Forge** (`/`) — the composer + a 3-step how-it-works + recent models.
+- **Roster** (`/roster`) — the lunar-RTS catalog (category tabs, tier, part
+  groups, size/cost, upgrade chains), forge-from-roster.
+- **Models** (`/models`) — all jobs with type/status filters and delete.
+- **Job** (`/jobs/:name`) — design metadata, a prominent **Refine** panel with a
+  rounds selector and before/after snapshots, live pipeline progress, and
+  side-by-side rendered output.
